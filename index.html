@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>네온 시크릿 사다리 게임</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbit&family=Outfit:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 1. 설정 화면 (Setup Panel) -->
+        <div id="setup-panel" class="panel active">
+            <header class="setup-header">
+                <div class="logo-icon"><i class="fa-solid fa-network-wired"></i></div>
+                <h1>시크릿 사다리 게임</h1>
+                <p>인원, 상품, 복잡도를 원하는 대로 설정하여 복불복을 즐겨보세요!</p>
+            </header>
+
+            <div class="setup-grid">
+                <!-- 왼쪽 설정: 게임 정보 & 복잡도 -->
+                <div class="setup-card game-info-card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-gear"></i> 기본 설정
+                    </div>
+                    <div class="form-group">
+                        <label for="game-title">게임 제목</label>
+                        <input type="text" id="game-title" value="주말 야구 관람자 선정! ⚾" placeholder="게임 제목을 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label>사다리 복잡도</label>
+                        <div class="complexity-selector">
+                            <label class="complexity-option">
+                                <input type="radio" name="complexity" value="simple" checked>
+                                <span class="custom-radio"></span>
+                                <span class="label-text">단순</span>
+                            </label>
+                            <label class="complexity-option">
+                                <input type="radio" name="complexity" value="complex">
+                                <span class="custom-radio"></span>
+                                <span class="label-text">복잡</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group count-controller-group">
+                        <label>인원 수 조절</label>
+                        <div class="count-controller">
+                            <button type="button" id="btn-decrease-count" class="ctrl-btn"><i class="fa-solid fa-minus"></i></button>
+                            <span id="display-count">3</span>
+                            <button type="button" id="btn-increase-count" class="ctrl-btn"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <small class="helper-text">* 최소 2명, 최대 10명까지 가능합니다.</small>
+                    </div>
+                </div>
+
+                <!-- 오른쪽 설정: 참가자 & 상품 리스트 -->
+                <div class="setup-card list-card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-users-gear"></i> 참가자 & 상품 입력
+                    </div>
+                    <div class="list-container">
+                        <div class="list-labels">
+                            <span class="label-participant">참가자 이름</span>
+                            <span class="label-prize">상품 / 벌칙</span>
+                            <span class="label-winner">당첨 여부</span>
+                        </div>
+                        <div id="entries-list" class="entries-list">
+                            <!-- JS를 통해 동적 생성됨 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-bar">
+                <button type="button" id="btn-generate-ladder" class="primary-btn">
+                    사다리 만들기 <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. 게임 보드 화면 (Game Board Panel) -->
+        <div id="game-panel" class="panel">
+            <header class="game-header">
+                <h1 id="active-game-title">게임 제목</h1>
+                <div class="status-badge" id="game-status-badge">대기 중</div>
+            </header>
+
+            <div class="game-board-container">
+                <!-- 사다리 상단: 참가자 이름 카드 노드들 -->
+                <div id="participants-row" class="nodes-row participants-row">
+                    <!-- JS 동적 생성 -->
+                </div>
+
+                <!-- 사다리 본체 영역 (캔버스 + 비밀 가림막 오버레이) -->
+                <div class="ladder-canvas-container">
+                    <canvas id="ladder-canvas"></canvas>
+                    
+                    <!-- 가림막 (블라인드) 레이어 -->
+                    <div id="ladder-blind" class="ladder-blind">
+                        <div class="blind-content">
+                            <div class="fog-animation"></div>
+                            <div class="blind-text">
+                                <i class="fa-solid fa-eye-slash lock-icon"></i>
+                                <h3>비밀 사다리 장막</h3>
+                                <p>사다리가 아래에 숨겨져 있습니다.<br>사다리 타기를 시작하면 경로가 은밀히 드러납니다!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 사다리 하단: 상품 카드 노드들 -->
+                <div id="prizes-row" class="nodes-row prizes-row">
+                    <!-- JS 동적 생성 -->
+                </div>
+            </div>
+
+            <div class="game-controls">
+                <button type="button" id="btn-back-to-setup" class="secondary-btn">
+                    <i class="fa-solid fa-arrow-left"></i> 설정 변경하기
+                </button>
+                <button type="button" id="btn-start-ladder" class="primary-btn pulse-glow">
+                    사다리 타기 시작! <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. 결과 요약 모달 (Result Modal) -->
+        <div id="result-modal" class="modal-overlay">
+            <div class="modal-content">
+                <button type="button" class="modal-close" id="btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+                <div class="modal-header">
+                    <div class="modal-badge"><i class="fa-solid fa-trophy"></i> 결과 발표</div>
+                    <h2 id="modal-celebration-title">축하합니다! 🎉</h2>
+                </div>
+                <div class="modal-body">
+                    <!-- 주요 당첨자 카드 -->
+                    <div id="winner-highlight-card" class="winner-highlight-card">
+                        <div class="winner-icon"><i class="fa-solid fa-baseball-bat-ball"></i></div>
+                        <div class="winner-details">
+                            <span class="detail-label">축하합니다! 주인공 탄생</span>
+                            <h3 id="winner-name">홍길동</h3>
+                            <p id="winner-prize-name">야구 관람권 ⚾</p>
+                        </div>
+                    </div>
+
+                    <!-- 전체 매칭 결과 테이블 -->
+                    <div class="full-results-container">
+                        <h4>전체 결과 목록</h4>
+                        <div class="table-wrapper">
+                            <table class="results-table">
+                               <thead>
+                                   <tr>
+                                       <th>참가자</th>
+                                       <th>결과</th>
+                                       <th>구분</th>
+                                   </tr>
+                               </thead>
+                               <tbody id="results-table-body">
+                                   <!-- JS 동적 생성 -->
+                               </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" id="btn-share-link" class="secondary-btn">
+                        링크 복사 <i class="fa-solid fa-copy"></i>
+                    </button>
+                    <button type="button" id="btn-replay" class="primary-btn">
+                        다시 하기 <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-message" class="toast-message">
+        <i class="fa-solid fa-circle-check"></i> 링크가 복사되었습니다! 카톡에 붙여넣어 공유해 보세요.
+    </div>
+
+    <!-- Custom Script -->
+    <script src="script.js"></script>
+</body>
+</html>
